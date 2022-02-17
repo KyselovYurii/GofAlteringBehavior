@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Calculator.Task3
 {
@@ -17,43 +18,68 @@ namespace Calculator.Task3
 
         public decimal CalculatePayment(string touristName)
         {
-            throw new NotImplementedException();
+            var rate = currencyService.LoadCurrencyRate();
+            var tripDetails = tripRepository.LoadTrip(touristName);
+            return Constants.A * rate * tripDetails.FlyCost
+                 + Constants.B * rate * tripDetails.AccomodationCost
+                 + Constants.C * rate * tripDetails.ExcursionCost;
         }
     }
 
     public class RoundingCalculatorDecorator : ICalculator
     {
-        public RoundingCalculatorDecorator()
+        private readonly ICalculator _calculator;
+
+        public RoundingCalculatorDecorator(ICalculator calculator)
         {
+            _calculator = calculator;
         }
 
         public decimal CalculatePayment(string touristName)
         {
-            throw new NotImplementedException();
+            return decimal.Round(_calculator.CalculatePayment(touristName));
         }
     }
 
     public class LoggingCalculatorDecorator : ICalculator
     {
-        public LoggingCalculatorDecorator()
+        private readonly ILogger _logger;
+        private readonly ICalculator _calculator;
+
+        public LoggingCalculatorDecorator(ILogger logger, ICalculator calculator)
         {
+            _logger = logger;
+            _calculator = calculator;
         }
 
         public decimal CalculatePayment(string touristName)
         {
-            throw new NotImplementedException();
+            _logger.Log("Start");
+            var payment = _calculator.CalculatePayment(touristName);
+            _logger.Log("End");
+            return payment;
         }
     }
 
     public class CachedPaymentDecorator : ICalculator
     {
-        public CachedPaymentDecorator()
+        private readonly ICalculator _calculator;
+        private readonly Dictionary<string, decimal> _cache = new Dictionary<string, decimal>();
+
+        public CachedPaymentDecorator(ICalculator calculator)
         {
+            _calculator = calculator;
         }
 
         public decimal CalculatePayment(string touristName)
         {
-            throw new NotImplementedException();
+            if (_cache.TryGetValue(touristName, out var payment))
+            {
+                return payment;
+            }
+
+            payment = _calculator.CalculatePayment(touristName);
+            return _cache[touristName] = payment;
         }
     }
 }
